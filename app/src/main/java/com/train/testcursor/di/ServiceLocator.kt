@@ -18,6 +18,7 @@ import com.train.testcursor.domain.usecase.ObserveFavoritesUseCase
 import com.train.testcursor.domain.usecase.RemoveFavoriteUseCase
 import com.train.testcursor.domain.usecase.GetRepoContentsUseCase
 import com.train.testcursor.domain.usecase.GetRepoDetailUseCase
+import com.train.testcursor.domain.usecase.GetRepoBranchesUseCase
 
 object ServiceLocator {
 	@Volatile
@@ -53,7 +54,8 @@ object ServiceLocator {
 		val addFavorite: AddFavoriteUseCase,
 		val removeFavorite: RemoveFavoriteUseCase,
 		val getRepoContents: GetRepoContentsUseCase,
-		val getRepoDetail: GetRepoDetailUseCase
+		val getRepoDetail: GetRepoDetailUseCase,
+		val getRepoBranches: GetRepoBranchesUseCase
 	)
 
 	fun provideUseCases(context: Context): UseCases {
@@ -70,7 +72,8 @@ object ServiceLocator {
 			addFavorite = AddFavoriteUseCase(repo),
 			removeFavorite = RemoveFavoriteUseCase(repo),
 			getRepoContents = GetRepoContentsUseCase(repo),
-			getRepoDetail = GetRepoDetailUseCase(repo)
+			getRepoDetail = GetRepoDetailUseCase(repo),
+			getRepoBranches = GetRepoBranchesUseCase(repo)
 		)
 	}
 }

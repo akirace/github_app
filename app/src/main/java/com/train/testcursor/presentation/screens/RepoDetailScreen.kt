@@ -52,7 +52,6 @@ import okhttp3.OkHttpClient
 import okhttp3.Request
 import okhttp3.RequestBody.Companion.toRequestBody
 import okhttp3.MediaType.Companion.toMediaType
-import java.io.File
 import java.nio.charset.Charset
 import org.json.JSONObject
 import androidx.compose.material3.AlertDialog
@@ -60,22 +59,29 @@ import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.launch
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
+import com.train.testcursor.BuildConfig
+import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.material3.ExposedDropdownMenuBox
+import androidx.compose.material3.ExposedDropdownMenuDefaults
+import androidx.compose.material3.TextField
+import com.train.testcursor.domain.model.GithubContent
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun RepoDetailScreen(
 	state: StateFlow<RepoDetailState>,
 	onBack: () -> Unit,
-	onNavigatePath: (String) -> Unit
+	onNavigatePath: (String) -> Unit,
+	onSelectBranch: (String) -> Unit
 ) {
 	val uiState by state.collectAsState()
 	var selectedPath = remember { mutableStateOf<String?>(null) }
 	val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
-    val fileText = remember { mutableStateOf<String?>(null) }
-    val isLoadingFile = remember { mutableStateOf(false) }
-    val isAskingAi = remember { mutableStateOf(false) }
-    val aiAnswer = remember { mutableStateOf<String?>(null) }
-    val showAiDialog = remember { mutableStateOf(false) }
+	val fileText = remember { mutableStateOf<String?>(null) }
+	val isLoadingFile = remember { mutableStateOf(false) }
+	val isAskingAi = remember { mutableStateOf(false) }
+	val aiAnswer = remember { mutableStateOf<String?>(null) }
+	val showAiDialog = remember { mutableStateOf(false) }
 	Scaffold(
 		topBar = {
 			CenterAlignedTopAppBar(
@@ -101,7 +107,7 @@ fun RepoDetailScreen(
 			else -> {
 				LazyColumn(Modifier.fillMaxSize().padding(innerPadding)) {
 					item {
-						HeaderSection(state = uiState, onBack = onBack)
+						HeaderSection(state = uiState, onBack = onBack, onSelectBranch = onSelectBranch)
 					}
 					item { Spacer(Modifier.height(8.dp)) }
 					item {
@@ -113,8 +119,8 @@ fun RepoDetailScreen(
 								onNavigatePath(clicked.path)
 							} else if (clicked.path.isNotEmpty()) {
 								selectedPath.value = clicked.path
-                                fileText.value = null
-                                isLoadingFile.value = true
+								fileText.value = null
+								isLoadingFile.value = true
 							}
 						})
 					}
@@ -128,7 +134,8 @@ fun RepoDetailScreen(
 		}
 		if (selectedPath.value != null && uiState.owner != null && uiState.repository != null) {
 			ModalBottomSheet(onDismissRequest = { selectedPath.value = null }, sheetState = sheetState) {
-				val rawUrl = "https://raw.githubusercontent.com/${uiState.owner}/${uiState.repository}/HEAD/${selectedPath.value}"
+				val ref = uiState.selectedBranch ?: "HEAD"
+				val rawUrl = "https://raw.githubusercontent.com/${uiState.owner}/${uiState.repository}/${ref}/${selectedPath.value}"
 				LaunchedEffect(rawUrl) {
 					if (selectedPath.value != null) {
 						withContext(Dispatchers.IO) {
@@ -186,9 +193,13 @@ fun RepoDetailScreen(
 								isAskingAi.value = true
 								aiAnswer.value = null
 								// Call Gemini API
-								val apiKey = "AIzaSyApcw7ilAe33V4qcQQSc79VA6eUYv5Vqjc"
-								val endpoint = "https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=$apiKey"
-								val promptText = "Provide a concise explanation and insights for the following code. Point out potential issues and improvements.\n\nFile: ${selectedPath.value}\n\n```\n${content.take(60000)}\n```"
+								val apiKey = BuildConfig.GEMINI_API_KEY
+								val endpoint =
+									"https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=$apiKey"
+								val promptText =
+									"Provide a concise explanation and insights for the following code. Point out potential issues and improvements.\n\nFile: ${selectedPath.value}\n\n```\n${
+										content.take(60000)
+									}\n```"
 								val json = """
 								{
 								  "contents": [
@@ -213,14 +224,17 @@ fun RepoDetailScreen(
 											val candidates = obj.optJSONArray("candidates")
 											var answer = ""
 											if (candidates != null && candidates.length() > 0) {
-												val contentObj = candidates.getJSONObject(0).optJSONObject("content")
+												val contentObj = candidates.getJSONObject(0)
+													.optJSONObject("content")
 												val parts = contentObj?.optJSONArray("parts")
 												if (parts != null && parts.length() > 0) {
-													answer = parts.getJSONObject(0).optString("text", "")
+													answer =
+														parts.getJSONObject(0).optString("text", "")
 												}
 											}
 											withContext(Dispatchers.Main) {
-												aiAnswer.value = answer.ifBlank { "No answer returned." }
+												aiAnswer.value =
+													answer.ifBlank { "No answer returned." }
 												isAskingAi.value = false
 												showAiDialog.value = true
 											}
@@ -234,7 +248,9 @@ fun RepoDetailScreen(
 									}
 								}
 							}
-						) { Text(if (isAskingAi.value) "Asking..." else "ASK AI") }
+						) {
+							Text(if (isAskingAi.value) "Asking..." else "ASK AI")
+						}
 						TextButton(onClick = { selectedPath.value = null }) { Text("Close") }
 					}
 				}
@@ -258,7 +274,7 @@ fun RepoDetailScreen(
 }
 
 @Composable
-private fun HeaderSection(state: RepoDetailState, onBack: () -> Unit) {
+private fun HeaderSection(state: RepoDetailState, onBack: () -> Unit, onSelectBranch: (String) -> Unit) {
 	val detail = state.detail
 	Surface(
 		tonalElevation = 2.dp,
@@ -287,6 +303,10 @@ private fun HeaderSection(state: RepoDetailState, onBack: () -> Unit) {
 					AssistChip(onClick = {}, label = { Text(detail!!.language!!) })
 				}
 			}
+			Spacer(Modifier.height(10.dp))
+			if (state.branches.isNotEmpty()) {
+				BranchPicker(branches = state.branches, selected = state.selectedBranch ?: detail?.defaultBranch.orEmpty(), onSelect = onSelectBranch)
+			}
 			Spacer(Modifier.height(12.dp))
 			Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
 				FilledTonalButton(onClick = onBack) {
@@ -294,6 +314,30 @@ private fun HeaderSection(state: RepoDetailState, onBack: () -> Unit) {
 					Spacer(Modifier.width(6.dp))
 					Text("Back to user")
 				}
+			}
+		}
+	}
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun BranchPicker(branches: List<String>, selected: String, onSelect: (String) -> Unit) {
+	var expanded = remember { mutableStateOf(false) }
+	ExposedDropdownMenuBox(expanded = expanded.value, onExpandedChange = { expanded.value = !expanded.value }) {
+		TextField(
+			value = selected,
+			onValueChange = {},
+			readOnly = true,
+			label = { Text("Branch") },
+			trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded.value) },
+			modifier = Modifier.menuAnchor().fillMaxWidth()
+		)
+		ExposedDropdownMenu(expanded = expanded.value, onDismissRequest = { expanded.value = false }) {
+			branches.forEach { name ->
+				DropdownMenuItem(text = { Text(name) }, onClick = {
+					expanded.value = false
+					onSelect(name)
+				})
 			}
 		}
 	}
@@ -310,8 +354,8 @@ private fun FilesHeader(path: String, onNavigatePath: (String) -> Unit) {
 
 @Composable
 private fun FileRow(
-	item: com.train.testcursor.domain.model.GithubContent,
-	onClick: (com.train.testcursor.domain.model.GithubContent) -> Unit
+	item: GithubContent,
+	onClick: (GithubContent) -> Unit
 ) {
 	Surface(
 		color = MaterialTheme.colorScheme.surfaceVariant,

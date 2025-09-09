@@ -5,11 +5,13 @@ import com.train.testcursor.data.remote.model.GithubUserDto
 import com.train.testcursor.data.remote.model.GithubRepoDto
 import com.train.testcursor.data.remote.model.GithubContentDto
 import com.train.testcursor.data.remote.model.GithubRepoDetailDto
+import com.train.testcursor.data.remote.model.GithubBranchDto
 import com.train.testcursor.domain.model.GithubUser
 import com.train.testcursor.domain.model.GithubRepo
 import com.train.testcursor.domain.model.GithubContent
 import com.train.testcursor.domain.model.ContentType
 import com.train.testcursor.domain.model.GithubRepoDetail
+import com.train.testcursor.domain.model.GithubBranch
 
 fun GithubUserDto.toDomain(): GithubUser = GithubUser(
 	id = id,
@@ -62,6 +64,10 @@ fun GithubRepoDetailDto.toDomain(): GithubRepoDetail = GithubRepoDetail(
 	defaultBranch = defaultBranch,
 	updatedAt = updatedAt,
 	htmlUrl = htmlUrl
+)
+
+fun GithubBranchDto.toDomain(): GithubBranch = GithubBranch(
+	name = name
 )
 
 

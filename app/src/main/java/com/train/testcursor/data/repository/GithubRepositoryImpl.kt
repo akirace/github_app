@@ -9,6 +9,7 @@ import com.train.testcursor.domain.model.GithubRepo
 import com.train.testcursor.domain.repository.GithubRepository
 import com.train.testcursor.domain.model.GithubContent
 import com.train.testcursor.domain.model.GithubRepoDetail
+import com.train.testcursor.domain.model.GithubBranch
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
 
@@ -29,12 +30,16 @@ class GithubRepositoryImpl(
 		return api.getUserRepos(username = username, perPage = perPage).map { it.toDomain() }
 	}
 
-	override suspend fun getRepoContents(owner: String, repo: String, path: String): List<GithubContent> {
-		return api.getRepoContents(owner = owner, repo = repo, path = if (path.isEmpty()) "" else path).map { it.toDomain() }
+	override suspend fun getRepoContents(owner: String, repo: String, path: String, ref: String?): List<GithubContent> {
+		return api.getRepoContents(owner = owner, repo = repo, path = if (path.isEmpty()) "" else path, ref = ref).map { it.toDomain() }
 	}
 
 	override suspend fun getRepoDetail(owner: String, repo: String): GithubRepoDetail {
 		return api.getRepoDetail(owner, repo).toDomain()
+	}
+
+	override suspend fun getRepoBranches(owner: String, repo: String): List<GithubBranch> {
+		return api.getRepoBranches(owner, repo).map { it.toDomain() }
 	}
 
 	override suspend fun getFollowers(username: String, perPage: Int): List<GithubUser> {

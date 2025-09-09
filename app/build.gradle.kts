@@ -36,11 +36,22 @@ android {
                     "\"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\""
                 )
             }
+            val gemini = (localProps.getProperty("GEMINI_API_KEY") ?: "").toString()
+            if (gemini.isNotEmpty()) {
+                buildConfigField("String", "GEMINI_API_KEY", "\"$gemini\"")
+            } else {
+                buildConfigField("String", "GEMINI_API_KEY", "\"\"")
+            }
         } else {
             buildConfigField(
                 "String",
                 "GITHUB_TOKEN",
                 "\"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\""
+            )
+            buildConfigField(
+                "String",
+                "GEMINI_API_KEY",
+                "\"\""
             )
         }
     }

@@ -8,6 +8,7 @@ import com.train.testcursor.data.remote.model.GithubRepoDto
 import com.train.testcursor.data.remote.model.SearchUsersResponseDto
 import com.train.testcursor.data.remote.model.GithubContentDto
 import com.train.testcursor.data.remote.model.GithubRepoDetailDto
+import com.train.testcursor.data.remote.model.GithubBranchDto
 
 interface GithubApiService {
 	@GET("users")
@@ -31,7 +32,8 @@ interface GithubApiService {
 	suspend fun getRepoContents(
 		@Path("owner") owner: String,
 		@Path("repo") repo: String,
-		@Path("path") path: String = ""
+		@Path("path") path: String = "",
+		@Query("ref") ref: String? = null
 	): List<GithubContentDto>
 
 	@GET("repos/{owner}/{repo}")
@@ -39,6 +41,13 @@ interface GithubApiService {
 		@Path("owner") owner: String,
 		@Path("repo") repo: String
 	): GithubRepoDetailDto
+
+	@GET("repos/{owner}/{repo}/branches")
+	suspend fun getRepoBranches(
+		@Path("owner") owner: String,
+		@Path("repo") repo: String,
+		@Query("per_page") perPage: Int = 100
+	): List<GithubBranchDto>
 
 	@GET("users/{username}/followers")
 	suspend fun getFollowers(

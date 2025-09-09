@@ -52,8 +52,8 @@ fun AppNav(modifier: Modifier = Modifier) {
 	val context = androidx.compose.ui.platform.LocalContext.current
 	val useCases = remember { ServiceLocator.provideUseCases(context) }
 	val currentRoute = navController.currentBackStackEntryAsState().value?.destination?.route
-    val drawerState = rememberDrawerState(initialValue = DrawerValue.Closed)
-    val scope = rememberCoroutineScope()
+	val drawerState = rememberDrawerState(initialValue = DrawerValue.Closed)
+	val scope = rememberCoroutineScope()
 
 	ModalNavigationDrawer(
 		drawerState = drawerState,
@@ -144,7 +144,7 @@ fun AppNav(modifier: Modifier = Modifier) {
 				}
 				DetailScreen(
 					state = vm.state,
-					onBack = { navController.popBackStack() },
+					onBack = { navController.navigate(Routes.HOME) { popUpTo(Routes.HOME) { inclusive = true } } },
 					onToggleFavorite = { vm.toggleFavorite() },
 					onLoadFollowers = { vm.loadFollowers() },
 					onLoadFollowing = { vm.loadFollowing() },
@@ -153,34 +153,51 @@ fun AppNav(modifier: Modifier = Modifier) {
 						if (parts.size >= 2) {
 							val owner = parts[0]
 							val repo = parts[1]
-							navController.navigate("repo/$owner/$repo")
+							navController.navigate("repo/$owner/$repo?user=${Uri.encode(username)}&uid=$id")
 						}
 					}
 				)
 			}
 			composable(
-				Routes.REPO_DETAIL + "?path={path}",
+				Routes.REPO_DETAIL + "?path={path}&branch={branch}&user={user}&uid={uid}",
 				arguments = listOf(
 					navArgument("owner") { type = NavType.StringType },
 					navArgument("repo") { type = NavType.StringType },
-					navArgument("path") { type = NavType.StringType; defaultValue = "" }
+					navArgument("path") { type = NavType.StringType; defaultValue = "" },
+					navArgument("branch") { type = NavType.StringType; defaultValue = "" },
+					navArgument("user") { type = NavType.StringType; defaultValue = "" },
+					navArgument("uid") { type = NavType.IntType; defaultValue = -1 }
 				)
 			) { backStackEntry ->
 				val owner = backStackEntry.arguments?.getString("owner") ?: return@composable
 				val repo = backStackEntry.arguments?.getString("repo") ?: return@composable
 				val path = backStackEntry.arguments?.getString("path") ?: ""
+				val branchArg = backStackEntry.arguments?.getString("branch") ?: ""
+				val userArg = backStackEntry.arguments?.getString("user") ?: ""
+				val uidArg = backStackEntry.arguments?.getInt("uid") ?: -1
 				val vm = viewModel<RepoDetailViewModel>(factory = object : ViewModelProvider.Factory {
 					override fun <T : ViewModel> create(modelClass: Class<T>): T {
 						@Suppress("UNCHECKED_CAST")
-						return RepoDetailViewModel(useCases.getRepoContents, useCases.getRepoDetail) as T
+						return RepoDetailViewModel(useCases.getRepoContents, useCases.getRepoDetail, useCases.getRepoBranches) as T
 					}
 				})
-				LaunchedEffect(owner, repo, path) { vm.load(owner, repo, path) }
+				LaunchedEffect(owner, repo, path, branchArg) { vm.load(owner, repo, path, branch = branchArg.ifBlank { null }) }
 				RepoDetailScreen(
 					state = vm.state,
-					onBack = { navController.popBackStack() },
+					onBack = {
+						if (userArg.isNotBlank() && uidArg > 0) {
+							navController.navigate("detail/${userArg}/${uidArg}")
+						} else {
+							navController.popBackStack()
+						}
+					},
 					onNavigatePath = { newPath ->
-						navController.navigate("repo/$owner/$repo?path=${Uri.encode(newPath)}")
+						val b = vm.state.value.selectedBranch.orEmpty()
+						navController.navigate("repo/$owner/$repo?path=${Uri.encode(newPath)}&branch=${Uri.encode(b)}&user=${Uri.encode(userArg)}&uid=$uidArg")
+					},
+					onSelectBranch = { branch ->
+						vm.selectBranch(branch)
+						navController.navigate("repo/$owner/$repo?path=${Uri.encode(path)}&branch=${Uri.encode(branch)}&user=${Uri.encode(userArg)}&uid=$uidArg")
 					}
 				)
 			}
