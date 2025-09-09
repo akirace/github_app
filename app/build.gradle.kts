@@ -30,11 +30,7 @@ android {
             if (token.isNotEmpty()) {
                 buildConfigField("String", "GITHUB_TOKEN", "\"$token\"")
             } else {
-                buildConfigField(
-                    "String",
-                    "GITHUB_TOKEN",
-                    "\"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\""
-                )
+                buildConfigField("String", "GITHUB_TOKEN", "\"\"")
             }
             val gemini = (localProps.getProperty("GEMINI_API_KEY") ?: "").toString()
             if (gemini.isNotEmpty()) {
@@ -43,10 +39,11 @@ android {
                 buildConfigField("String", "GEMINI_API_KEY", "\"\"")
             }
         } else {
+            //not used anymore
             buildConfigField(
                 "String",
                 "GITHUB_TOKEN",
-                "\"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\""
+                "\"\""
             )
             buildConfigField(
                 "String",
