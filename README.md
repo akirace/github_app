@@ -165,4 +165,4 @@ Gemini flow (simplified):
 3. Open a PR describing the motivation and changes
 
 ## License
-This project is provided as-is. Add your license of choice here (e.g., MIT, Apache-2.0).
+Apache-2.0.
