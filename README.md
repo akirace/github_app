@@ -64,7 +64,7 @@ Dependency flow: `presentation → domain → data`
 
 ### Clone & open
 ```bash
-git clone https://github.com/your-org/github_app.git
+git clone https://github.com/akirace/github_app.git
 cd github_app
 ```
 Open the project in Android Studio.
