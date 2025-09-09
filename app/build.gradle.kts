@@ -8,7 +8,7 @@ plugins {
 }
 
 android {
-    namespace = "com.train.testcursor"
+    namespace = "com.train.github"
     compileSdk = 34
 
     defaultConfig {
